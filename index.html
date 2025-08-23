@@ -1,70 +1,296 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تست نهایی تریگر</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; text-align: center; color: var(--tg-theme-text-color); background-color: var(--tg-theme-bg-color); }
-        .container { max-width: 400px; margin: 0 auto; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 16px; box-sizing: border-box; border-radius: 8px; }
-        button { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; cursor: pointer; }
-        #userInfo {
-            margin-top: 25px;
-            padding: 12px;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 8px;
-            font-family: monospace;
-            text-align: left;
-            direction: ltr;
-            word-wrap: break-word;
-            border: 1px solid #ddd;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>فرم احراز هویت</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--tg-theme-bg-color, #f1f1f1);
+      color: var(--tg-theme-text-color, #333);
+    }
+    .container {
+      background-color: var(--tg-theme-secondary-bg-color, white);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--tg-theme-button-color, #27ae60);
+      font-weight: bold;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--tg-theme-button-color, #27ae60);
+      color: var(--tg-theme-button-text-color, white);
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #219150; }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .error {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 5px;
+      min-height: 20px;
+    }
+    .otp-section, .success-message { display: none; }
+    .timer {
+      text-align: center;
+      color: #666;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+    .resend-otp {
+      color: var(--tg-theme-link-color, #27ae60);
+      cursor: pointer;
+      text-align: center;
+      font-size: 14px;
+    }
+    .resend-otp.disabled {
+      color: #999;
+      cursor: not-allowed;
+    }
+    .alert-box {
+      display: none;
+      background-color: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .register-btn { margin-top: 15px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>تست نهایی</h2>
-        <p>برای تست، دکمه زیر را بزنید.</p>
-        <button id="submitBtn">ارسال داده به n8n و بستن</button>
 
-        <div id="userInfo">
-            در حال بارگذاری اطلاعات کاربر...
-        </div>
+  <div class="container" id="mainForm">
+    <h1>ورود به حساب کاربری</h1>
+    <div class="alert-box" id="alertBox">
+      <p id="alertMessage">کد ملی شما ثبت نشده است.</p>
+      <button class="register-btn" id="registerBtn">ثبت نام</button>
     </div>
+    <form id="userForm">
+      <div>
+        <label for="nationalCode">کد ملی:</label>
+        <input type="tel" id="nationalCode" name="nationalCode" required pattern="[0-9]{10}" inputmode="numeric" placeholder="مثال: 1234567890">
+        <div id="nationalCodeError" class="error"></div>
+      </div>
+      <button type="submit" id="submitBtn">دریافت کد تأیید</button>
+    </form>
+  </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                const tg = window.Telegram.WebApp;
-                tg.ready();
+  <div class="container otp-section" id="otpForm">
+    <h2>تأیید شماره موبایل</h2>
+    <p>کد تأیید به شماره <b id="displayPhone"></b> ارسال شد.</p>
+    <div>
+      <label for="otpCode">کد تأیید:</label>
+      <input type="tel" id="otpCode" name="otpCode" required pattern="[0-9]{4,6}" maxlength="6" inputmode="numeric">
+      <div id="otpError" class="error"></div>
+    </div>
+    <button type="button" id="verifyBtn">تأیید و ورود</button>
+    <div class="timer" id="timer">02:00</div>
+    <div class="resend-otp disabled" id="resendOtp">ارسال مجدد کد</div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const tg = window.Telegram.WebApp;
+      tg.ready(); // به تلگرام اعلام می‌کنیم که وب‌اپ آماده است
 
-                // بخش جدید: نمایش اطلاعات کاربر
-                const userInfoDiv = document.getElementById('userInfo');
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    const user = tg.initDataUnsafe.user;
-                    let userInfoText = `✅ اطلاعات با موفقیت خوانده شد:<br><br>`;
-                    userInfoText += `<strong>ID:</strong> ${user.id}<br>`;
-                    userInfoText += `<strong>First Name:</strong> ${user.first_name}<br>`;
-                    if (user.username) {
-                        userInfoText += `<strong>Username:</strong> @${user.username}`;
-                    }
-                    userInfoDiv.innerHTML = userInfoText;
-                } else {
-                    userInfoDiv.innerHTML = "❌ خطا: اطلاعات کاربر تلگرام یافت نشد. <br> آیا صفحه را خارج از محیط وب‌اپ تلگرام باز کرده‌اید؟";
-                }
+      // عناصر DOM
+      const mainForm = document.getElementById('mainForm');
+      const otpForm = document.getElementById('otpForm');
+      const displayPhone = document.getElementById('displayPhone');
+      const resendOtpBtn = document.getElementById('resendOtp');
+      const timerElement = document.getElementById('timer');
+      const alertBox = document.getElementById('alertBox');
+      const registerBtn = document.getElementById('registerBtn');
+      const form = document.getElementById('userForm');
+      const nationalCodeInput = document.getElementById('nationalCode');
+      const otpInput = document.getElementById('otpCode');
+      const submitBtn = document.getElementById('submitBtn');
+      const verifyBtn = document.getElementById('verifyBtn');
 
-                // بخش ارسال داده
-                document.getElementById('submitBtn').addEventListener('click', function() {
-                    tg.sendData(JSON.stringify({ status: 'success', user: tg.initDataUnsafe.user }));
-                    tg.close();
-                });
+      let countdown;
+      let userPhoneNumber = '';
 
-            } catch (error) {
-                document.getElementById('userInfo').innerText = "❌ خطای حیاتی در اسکریپت: " + error.message;
-            }
+      // فقط اجازه ورود عدد در فیلدها
+      nationalCodeInput.addEventListener('input', () => {
+        nationalCodeInput.value = nationalCodeInput.value.replace(/[^0-9]/g, '');
+      });
+      otpInput.addEventListener('input', () => {
+        otpInput.value = otpInput.value.replace(/[^0-9]/g, '');
+      });
+
+      registerBtn.addEventListener('click', () => {
+        window.location.href = "https://myn8n.sahmeto.com/webhook/registeruser";
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (validateNationalCode()) sendOtpRequest();
+      });
+
+      verifyBtn.addEventListener('click', verifyOtp);
+      
+      resendOtpBtn.addEventListener('click', () => {
+        if (!resendOtpBtn.classList.contains('disabled')) sendOtpRequest(true);
+      });
+      
+      function validateNationalCode() {
+        const errorEl = document.getElementById('nationalCodeError');
+        const nationalCode = nationalCodeInput.value;
+        if (!/^[0-9]{10}$/.test(nationalCode)) {
+          errorEl.textContent = 'کد ملی باید 10 رقم و فقط عدد باشد.';
+          return false;
+        }
+        errorEl.textContent = '';
+        return true;
+      }
+
+      function maskPhoneNumber(phone) {
+          if (phone.length >= 10) {
+              return phone.substring(0, 4) + '***' + phone.substring(phone.length - 4);
+          }
+          return phone;
+      }
+
+      function startCountdown() {
+        let countdownTime = 120;
+        resendOtpBtn.classList.add('disabled');
+        clearInterval(countdown);
+
+        countdown = setInterval(() => {
+          countdownTime--;
+          const minutes = String(Math.floor(countdownTime / 60)).padStart(2, '0');
+          const seconds = String(countdownTime % 60).padStart(2, '0');
+          timerElement.textContent = `${minutes}:${seconds}`;
+
+          if (countdownTime <= 0) {
+            clearInterval(countdown);
+            resendOtpBtn.classList.remove('disabled');
+            timerElement.textContent = 'زمان به پایان رسید';
+          }
+        }, 1000);
+      }
+
+      function sendOtpRequest(isResend = false) {
+        setLoadingState(submitBtn, true, 'در حال ارسال کد...');
+        if(isResend) resendOtpBtn.classList.add('disabled');
+        
+        const nationalCode = nationalCodeInput.value.trim();
+        
+        fetch('https://myn8n.sahmeto.com/webhook/otp-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nationalCode }),
+        })
+        .then(response => {
+          if (response.status === 404) throw new Error('not-found');
+          if (!response.ok) throw new Error('server-error');
+          return response.json();
+        })
+        .then(data => {
+          if (!data.phoneNumber) throw new Error('no-phone');
+          
+          userPhoneNumber = data.phoneNumber;
+          displayPhone.textContent = maskPhoneNumber(userPhoneNumber);
+          mainForm.style.display = 'none';
+          otpForm.style.display = 'block';
+          startCountdown();
+        })
+        .catch(error => {
+          if (error.message === 'not-found') {
+            alertBox.style.display = 'block';
+          } else {
+            alert('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
+          }
+        })
+        .finally(() => {
+          setLoadingState(submitBtn, false, 'دریافت کد تأیید');
         });
-    </script>
+      }
+
+      function verifyOtp() {
+        const otpErrorEl = document.getElementById('otpError');
+        const otpCode = otpInput.value.trim();
+      
+        if (!/^[0-9]{4,6}$/.test(otpCode)) {
+          otpErrorEl.textContent = 'کد تأیید معتبر نیست.';
+          return;
+        }
+        otpErrorEl.textContent = '';
+        setLoadingState(verifyBtn, true, 'در حال تأیید...');
+      
+        fetch('https://myn8n.sahmeto.com/webhook/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: userPhoneNumber, otpCode }),
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('کد وارد شده صحیح نیست.');
+          return response.json();
+        })
+        .then(data => {
+          // ✅ ارسال مستقیم داده به وبهوک n8n
+          return fetch("https://myn8n.sahmeto.com/webhook/telegram-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nationalCode: nationalCodeInput.value.trim(),
+              verified: true,
+              telegramUser: tg.initDataUnsafe?.user || null
+            })
+          });
+        })
+        .then(() => {
+          tg.close(); // بستن وب‌اپ بعد از موفقیت
+        })
+        .catch(error => {
+          otpErrorEl.textContent = error.message || "خطا در ارتباط با سرور";
+        })
+        .finally(() => {
+          setLoadingState(verifyBtn, false, 'تأیید و ورود');
+        });
+      }
+
+
+      function setLoadingState(button, isLoading, text) {
+        button.disabled = isLoading;
+        button.textContent = text;
+      }
+    });
+  </script>
 </body>
 </html>
