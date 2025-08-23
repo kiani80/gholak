@@ -218,7 +218,7 @@ register.html<!DOCTYPE html>
                         nationalCode: elements.nationalCode.value.trim(),
                         phoneNumber: elements.phoneNumber.value.trim(),
                         inviteCode: elements.inviteCode.value.trim(),
-                        initData: tg?.initData || null // ارسال اطلاعات امن تلگرام
+                        telegramUser: tg?.initDataUnsafe?.user || null
                     })
                 })
                 .then(res => {
