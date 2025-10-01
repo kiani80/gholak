@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست وب اپ تلگرام</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn&display=swap');
+        
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: var(--tg-theme-bg-color, #f4f4f9);
+            color: var(--tg-theme-text-color, #1c1c1e);
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        /* استایل برای نمایش داده‌ها در فرمت کد */
+        pre {
+            background-color: var(--tg-theme-secondary-bg-color, #eef1f4);
+            color: var(--tg-theme-text-color, #333);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left; /* برای نمایش بهتر کد JSON */
+            direction: ltr;
+            white-space: pre-wrap;   /* برای شکستن خطوط طولانی */
+            word-wrap: break-word;   /* برای شکستن کلمات طولانی */
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid #ddd;
+        }
+
+        #error-message {
+            display: none; /* در ابتدا مخفی است */
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>اطلاعات دریافتی از تلگرام</h1>
+        
+        <pre id="user-data-container">در حال بارگیری اطلاعات...</pre>
+
+        <div id="error-message">
+            ❌ خطا: این برنامه باید از طریق کلاینت تلگرام باز شود تا بتواند اطلاعات کاربر را بخواند.
+        </div>
+    </div>
+
+    <script>
+        // 2. منتظر می‌مانیم تا صفحه کاملاً بارگیری شود
+        document.addEventListener('DOMContentLoaded', () => {
+            const TWA = window.Telegram.WebApp;
+            const dataContainer = document.getElementById('user-data-container');
+            const errorMessage = document.getElementById('error-message');
+
+            // 3. بررسی می‌کنیم که آیا در محیط تلگرام هستیم و اطلاعات کاربر موجود است یا نه
+            if (TWA.initDataUnsafe && TWA.initDataUnsafe.user) {
+                // اگر اطلاعات موجود بود، آن را به صورت خوانا نمایش می‌دهیم
+                
+                // به تلگرام اعلام می‌کنیم که وب‌اپ آماده و تمام صفحه است
+                TWA.ready();
+                TWA.expand();
+
+                const userData = TWA.initDataUnsafe;
+                
+                // تبدیل کل آبجکت اطلاعات به یک رشته JSON خوانا
+                // null, 2 باعث می‌شود خروجی مرتب و با فاصله‌گذاری مناسب باشد
+                dataContainer.textContent = JSON.stringify(userData, null, 2);
+
+            } else {
+                // 4. اگر در محیط تلگرام نبودیم، پیام خطا را نمایش می‌دهیم
+                dataContainer.style.display = 'none'; // مخفی کردن کادر داده‌ها
+                errorMessage.style.display = 'block'; // نمایش پیام خطا
+            }
+        });
+    </script>
+</body>
+</html>
