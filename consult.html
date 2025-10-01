@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>درخواست مشاوره</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         
+        :root {
+            /* خواندن متغیرهای رنگ از کلاینت تلگرام */
+            --tg-theme-bg-color: var(--tg-bg-color, #ffffff);
+            --tg-theme-text-color: var(--tg-text-color, #222222);
+            --tg-theme-button-color: var(--tg-button-color, #007BFF);
+            --tg-theme-button-text-color: var(--tg-button-text-color, #ffffff);
+        }
+
         body {
             font-family: 'Vazirmatn', Arial, sans-serif;
             text-align: center;
-            padding: 40px 20px;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
             margin: 0;
             box-sizing: border-box;
         }
@@ -25,20 +29,17 @@
             max-width: 500px;
             width: 100%;
             margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         h1 {
             font-weight: 700;
-            color: #333;
+        }
+        p {
+            color: var(--tg-secondary-bg-color, #6c757d);
         }
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
-            color: #555;
             text-align: right;
         }
         input[type="tel"] {
@@ -52,9 +53,10 @@
             direction: ltr;
             font-size: 16px;
         }
-        button {
-            background-color: #007BFF; /* رنگ آبی مدرن */
-            color: white;
+        /* این دکمه فقط زمانی نمایش داده می‌شود که برنامه در مرورگر باز شود */
+        #browser-submit-button {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
             padding: 12px 20px;
             border: none;
             border-radius: 8px;
@@ -62,14 +64,11 @@
             font-size: 16px;
             width: 100%;
             font-family: 'Vazirmatn', sans-serif;
-            transition: background-color 0.3s;
+            display: none; /* در ابتدا مخفی است */
         }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .message {
+        #successMessage {
             display: none;
-            color: #28a745; /* رنگ سبز موفقیت */
+            color: #28a745;
             margin-top: 20px;
             font-weight: bold;
             font-size: 18px;
@@ -78,55 +77,120 @@
 </head>
 <body>
     <div class="container">
-        <h1>درخواست مشاوره</h1>
-        <p>برای دریافت مشاوره رایگان، شماره تماس خود را وارد کنید.</p>
+        <h1 id="greeting">درخواست مشاوره</h1>
+        <p id="description">برای دریافت مشاوره رایگان، شماره تماس خود را در کادر زیر وارد کنید.</p>
+        
         <form id="consultationForm">
             <label for="phone">شماره موبایل:</label>
             <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxxx" required pattern="09[0-9]{9}" autocomplete="tel">
-            <button type="submit">ارسال شماره</button>
+            <button type="submit" id="browser-submit-button">ارسال شماره</button>
         </form>
-        <div id="successMessage" class="message">
+        
+        <div id="successMessage">
             ✅ درخواست شما با موفقیت ثبت شد. <br> همکاران ما در اولین فرصت با شما تماس خواهند گرفت.
         </div>
     </div>
 
     <script>
-        document.getElementById('consultationForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // جلوگیری از رفرش شدن صفحه
-            
-            // دریافت شماره تلفن از کاربر
-            const phoneNumber = document.getElementById('phone').value;
-            
-            // آدرس endpoint جدید شما برای ارسال داده
+        document.addEventListener('DOMContentLoaded', () => {
+            const TWA = window.Telegram.WebApp;
+            const form = document.getElementById('consultationForm');
+            const phoneInput = document.getElementById('phone');
+            const greeting = document.getElementById('greeting');
+            const description = document.getElementById('description');
+            const successMessage = document.getElementById('successMessage');
+            const browserButton = document.getElementById('browser-submit-button');
+
             const endpoint = 'https://myn8n.sahmeto.com/webhook/consult';
-            
-            // ارسال داده به سرور با استفاده از POST
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // ساختار داده ارسالی (ممکن است نیاز به تغییر داشته باشد)
-                // اگر وب‌هوک شما منتظر کلید دیگری است، 'phone_number' را تغییر دهید
-                body: JSON.stringify({ phone_number: phoneNumber }), 
-            })
-            .then(response => {
-                if (response.ok) {
-                    // نمایش پیام موفقیت
-                    document.getElementById('consultationForm').style.display = 'none';
-                    document.querySelector('h1').style.display = 'none';
-                    document.querySelector('p').style.display = 'none';
-                    document.getElementById('successMessage').style.display = 'block';
-                } else {
-                    // در صورت بروز خطا از سمت سرور
-                    alert('خطا در ثبت اطلاعات. لطفاً مجدداً تلاش نمایید.');
+
+            // تابع برای ارسال اطلاعات به سرور
+            const postData = async (data) => {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('Error:', error);
+                    return false;
                 }
-            })
-            .catch(error => {
-                // در صورت بروز خطا در اتصال
-                console.error('Error:', error);
-                alert('خطا در ارتباط با سرور. لطفاً از اتصال اینترنت خود مطمئن شوید.');
-            });
+            };
+
+            // ---- تشخیص محیط ----
+            // اگر در محیط تلگرام بود
+            if (TWA.initDataUnsafe && TWA.initDataUnsafe.user) {
+                TWA.ready(); // به تلگرام اعلام می‌کنیم که وب‌اپ آماده است
+                TWA.expand(); // صفحه را تمام صفحه می‌کنیم
+
+                // نمایش نام کاربر تلگرام
+                const user = TWA.initDataUnsafe.user;
+                greeting.innerText = `سلام ${user.first_name}!`;
+                description.innerText = 'برای تکمیل درخواست، لطفاً شماره موبایل خود را وارد کرده و دکمه پایین صفحه را بزنید.';
+
+                // تنظیمات دکمه اصلی تلگرام
+                TWA.MainButton.setText('ثبت و ارسال اطلاعات');
+                TWA.MainButton.show();
+
+                // رویداد کلیک روی دکمه اصلی تلگرام
+                TWA.onEvent('mainButtonClicked', async () => {
+                    if (!phoneInput.checkValidity()) {
+                        TWA.showAlert('لطفاً شماره موبایل را به صورت صحیح (مثال: 09123456789) وارد کنید.');
+                        return;
+                    }
+
+                    TWA.MainButton.showProgress(); // نمایش لودینگ
+                    
+                    const dataToSend = {
+                        phone_number: phoneInput.value,
+                        telegram_user_id: user.id,
+                        first_name: user.first_name,
+                        last_name: user.last_name || '',
+                        username: user.username || '',
+                        is_premium: user.is_premium || false
+                    };
+
+                    const success = await postData(dataToSend);
+
+                    TWA.MainButton.hideProgress(); // مخفی کردن لودینگ
+
+                    if (success) {
+                        TWA.showAlert('✅ درخواست شما با موفقیت ثبت شد.');
+                        TWA.close(); // بستن وب اپ
+                    } else {
+                        TWA.showAlert('خطایی در ارسال اطلاعات رخ داد. لطفاً مجدداً تلاش کنید.');
+                    }
+                });
+
+            } else { // اگر در مرورگر معمولی بود
+                console.log("Running in a standard browser.");
+                browserButton.style.display = 'block'; // نمایش دکمه HTML
+
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!phoneInput.checkValidity()) {
+                        alert('لطفاً شماره موبایل را به صورت صحیح وارد کنید.');
+                        return;
+                    }
+                    
+                    const dataToSend = {
+                        phone_number: phoneInput.value,
+                        source: 'browser' // برای اینکه در سرور بدانید از کجا آمده
+                    };
+
+                    const success = await postData(dataToSend);
+                    
+                    if (success) {
+                        form.style.display = 'none';
+                        greeting.style.display = 'none';
+                        description.style.display = 'none';
+                        successMessage.style.display = 'block';
+                    } else {
+                        alert('خطا در ارتباط با سرور. لطفاً مجدداً تلاش کنید.');
+                    }
+                });
+            }
         });
     </script>
 </body>
