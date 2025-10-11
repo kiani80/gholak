@@ -21,9 +21,7 @@
             width: 100%;
             margin: 0 auto;
         }
-        h1 {
-            font-weight: 700;
-        }
+        h1 { font-weight: 700; }
         label {
             display: block;
             margin-bottom: 8px;
@@ -41,7 +39,6 @@
             direction: ltr;
             font-size: 16px;
         }
-        /* استایل دکمه ارسال که همیشه نمایش داده می‌شود */
         #submit-button {
             background-color: var(--tg-button-color, #007BFF);
             color: var(--tg-button-text-color, #ffffff);
@@ -75,27 +72,28 @@
         <form id="consultationForm">
             <label for="phone">شماره موبایل:</label>
             <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxxx" required pattern="09[0-9]{9}" autocomplete="tel">
-            
             <button type="submit" id="submit-button">ارسال شماره</button>
         </form>
         
-        <div id="successMessage">
-            ✅ درخواست شما با موفقیت ثبت شد.
-        </div>
+        <div id="successMessage">✅ درخواست شما با موفقیت ثبت شد.</div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const TWA = window.Telegram.WebApp;
+            let TWA = null;
+            if (window.Telegram && window.Telegram.WebApp) {
+                TWA = window.Telegram.WebApp;
+            }
+
             const form = document.getElementById('consultationForm');
             const phoneInput = document.getElementById('phone');
             const submitButton = document.getElementById('submit-button');
             const successMessage = document.getElementById('successMessage');
             const greeting = document.getElementById('greeting');
-            
+
             const endpoint = 'https://myn8n.sahmeto.com/webhook/consult';
 
-            // اگر در محیط تلگرام بودیم، صفحه را تمام صفحه کرده و نام کاربر را نمایش می‌دهیم
+            // فقط اگر داخل تلگرام بودیم
             if (TWA && TWA.initDataUnsafe && TWA.initDataUnsafe.user) {
                 TWA.ready();
                 TWA.expand();
@@ -103,24 +101,22 @@
             }
 
             form.addEventListener('submit', async (e) => {
-                e.preventDefault(); // جلوگیری از رفرش شدن صفحه
-                
+                e.preventDefault();
+                console.log("Submit Triggered");
+
                 if (!phoneInput.checkValidity()) {
                     alert('لطفاً شماره موبایل را به صورت صحیح وارد کنید.');
                     return;
                 }
 
-                // غیرفعال کردن دکمه برای جلوگیری از کلیک‌های تکراری
                 submitButton.disabled = true;
                 submitButton.innerText = 'در حال ارسال...';
 
-                // آماده‌سازی داده‌ها برای ارسال
                 let dataToSend = {
                     phone_number: phoneInput.value,
                     source: 'web-form'
                 };
 
-                // اگر اطلاعات کاربر تلگرام موجود بود، آن‌ها را هم به داده‌ها اضافه می‌کنیم
                 if (TWA && TWA.initDataUnsafe && TWA.initDataUnsafe.user) {
                     const user = TWA.initDataUnsafe.user;
                     dataToSend.telegram_user_id = user.id;
@@ -138,11 +134,9 @@
                     });
 
                     if (response.ok) {
-                        // نمایش پیام موفقیت
                         form.style.display = 'none';
                         successMessage.style.display = 'block';
-                        
-                        // اگر در تلگرام بودیم، بعد از 2 ثانیه وب اپ را می‌بندیم
+
                         if (TWA && TWA.close) {
                             setTimeout(() => TWA.close(), 2000);
                         }
